@@ -58,6 +58,7 @@ int main(int argc, char *argv[]){
         perror("read error");
         exit(1);
     }
+    printf("%s",&buffer);
 
     return 0;
 }

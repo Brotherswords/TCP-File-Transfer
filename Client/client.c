@@ -13,7 +13,7 @@ int requestInfo();
 int main(int argc, char *argv[]){
     int sd;
     struct sockaddr_in server_address;
-    char filename[20];
+    char filename[100];
     char buffer[100] = "hello world";
     int portNumber;
     char serverIP[29];
@@ -51,13 +51,22 @@ int main(int argc, char *argv[]){
         perror("error writing");
     }
 
-    rc = write(sd, filename, converted_sizeOfFileName);
+    rc = write(sd, &filename, sizeof(filename));
     printf("sent %d bytes\n to send the filename\n", rc);    
     if(rc < 0){
         perror("error writing");
     }
+
+
     return 0;
     //requestInfo();
+}
+
+int getFileLength(FILE* fp){
+    fseek(fp, 0, SEEK_END);
+    int size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    return size;
 }
 
 int requestInfo()
@@ -112,16 +121,16 @@ int requestInfo()
     return 0;
 }
 
-#define BUFFSIZE 1000
+#define BUFFSIZEREAD 1000
 
 int readfile(FILE *inputFile, FILE *outputFile)
 {
-    unsigned char buffer [BUFFSIZE];
+    unsigned char buffer [BUFFSIZEREAD];
     int numberOfBytes;
     int rc;
     int totalBytesRead = 0, totalBytesWritten = 0;
 
-    numberOfBytes = fread(buffer,1, BUFFSIZE, inputFile);
+    numberOfBytes = fread(buffer,1, BUFFSIZEREAD, inputFile);
 
     while(numberOfBytes > 0){
         totalBytesRead += numberOfBytes;
@@ -131,7 +140,7 @@ int readfile(FILE *inputFile, FILE *outputFile)
             exit(1);
         }
         totalBytesWritten += rc;
-        numberOfBytes = fread(buffer,1,BUFFSIZE,inputFile);
+        numberOfBytes = fread(buffer,1,BUFFSIZEREAD,inputFile);
     }
     printf("read %d bytes, and wrote %d bytes\n", totalBytesRead, totalBytesWritten);
     return 0;
