@@ -6,6 +6,9 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+
+int establishConnection(int portNumber, int sd);
+
 int main(int argc, char *argv[]){
     int sd; /*socket descriptor*/
     int flag; 
@@ -47,7 +50,7 @@ int main(int argc, char *argv[]){
     listen(sd, 5);
     connected_sd = accept(sd, (struct sockaddr*) &from_address, &fromLength);
 
-    while(1){
+    while(connected_sd){
         memset(buffer,0,100);
         //READ STATEMENT
         int sizeOfFileName;
@@ -96,6 +99,9 @@ int main(int argc, char *argv[]){
             }
             rc = fwrite(bufferLocal, 1, 1, outputFile);
         }
+        //WRITE STATEMNENT, ACK
+        rc = write(connected_sd, &bytesRead, sizeof(int));
+
         fclose(outputFile);
     }
 

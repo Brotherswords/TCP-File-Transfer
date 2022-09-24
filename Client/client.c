@@ -113,7 +113,10 @@ int main(int argc, char *argv[]){
         }
         printf("Closing the file test.c\n") ;
         fclose (inputFile ) ;
-        printf("read %d bytes, and wrote bytes\n", totalBytesRead);
+        //READ STATEMENT ACK from Server
+        int totalBytesReceived = 0;
+        rc = read(sd, &totalBytesReceived, sizeof(int));
+        printf("ACK from server: Server Received %d bytes\n", totalBytesReceived);
     }
 
     return 0;
