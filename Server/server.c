@@ -17,9 +17,10 @@ int main(int argc, char *argv[]){
     char output[100];
     socklen_t fromLength; 
     int portNumber; 
-    int bytesRead;
+    int bytesRead ;
     FILE *outputFile;
     
+
     if (argc < 2){
         printf("Usage is: server <portNumber>\n"); 
         exit(1);
@@ -43,8 +44,9 @@ int main(int argc, char *argv[]){
 
     listen(sd, 5);
     connected_sd = accept(sd, (struct sockaddr*) &from_address, &fromLength);
-    memset(buffer,0,100);
+    
 
+    memset(buffer,0,100);
     //READ STATEMENT
     int sizeOfFileName;
     rc = read(connected_sd, &sizeOfFileName,sizeof(int));
@@ -53,26 +55,37 @@ int main(int argc, char *argv[]){
     sizeOfFileName = ntohs(sizeOfFileName);
     printf("size of the file name after converson is %d bytes \n",sizeOfFileName);
 
+
     //READ STATEMENT
     int fileSize;
     rc = read(connected_sd, &fileSize, sizeof(int));
     printf("read %d bytes to get the filesize\n",rc);
-    printf("size of the file name prior to converson is %d bytes \n",fileSize);
+    //printf("size of the file name prior to converson is %d bytes \n",fileSize);
     fileSize = ntohl(fileSize);
-    printf("Size of file: %d\n",fileSize);
-
+    printf("Size of file: %d bytes\n",fileSize);
 
     //READ STATEMENT
     rc = read(connected_sd, output, sizeOfFileName);
-    if (rc <0 ){
-        perror("read error");
-        exit(1);
-    }
     //prints name of the file
     printf("Name of file: %s\n",output);
 
-
-
-
+    //READ FILECONTENTS YAY!
+    if((outputFile = fopen(output, "wb")) == NULL){
+        printf("open %s failed\n",output);
+    }
+    
+    bytesRead = 0;
+    while(bytesRead < fileSize){
+        bytesRead+=1;
+        char bufferLocal[1];
+        rc = read(connected_sd, bufferLocal, 1);
+        if (rc < 0){
+            printf("LMAO bruh you are kinda sus omegalul! %d", rc);
+            flag = 1;
+            break;
+        }
+        rc = fwrite(bufferLocal, 1, 1, outputFile);
+    }
+    fclose(outputFile);
     return 0;
 }

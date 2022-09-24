@@ -6,9 +6,9 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-int readfile(FILE *inputFile, FILE *outputFile);
+#define BUFFSIZEREAD 1000
 
-int requestInfo();
+int readfile(FILE *inputFile, int sd, int rc);
 
 int getFileLength(FILE* fp);
 
@@ -16,7 +16,6 @@ int main(int argc, char *argv[]){
     int sd;
     struct sockaddr_in server_address;
     char filename[100];
-    char buffer[100] = "hello world";
     int portNumber;
     char serverIP[29];
     FILE *inputFile;
@@ -41,6 +40,7 @@ int main(int argc, char *argv[]){
         perror("error connecting stream socket");
         exit(1);
     }
+    memset(filename,0,100);
 
     printf("What is the name of the file you'd like to send?\n");
     scanf("%s", filename);
@@ -50,37 +50,52 @@ int main(int argc, char *argv[]){
     int sizeOfFileName = strlen(inputFileName);
     int converted_sizeOfFileName = ntohs(sizeOfFileName);
 
+    //WRITE STATEMENT
     //Getting ready to send the size of the file name in bytes
     rc = write(sd, &converted_sizeOfFileName, sizeof(converted_sizeOfFileName));
     printf("wrote %d bytes to send the filename size\n", rc);
     if (rc < 0) {
         perror("error writing");
     }
-
+    //WRITE STATEMENT
     //Getting ready to send the size of the file in bytes
     if((inputFile = fopen(filename, "rb")) == NULL) {
         printf("cannot open input file %s\n", filename);
-        exit(1);
     }
 
     int bytesToWrite = getFileLength(inputFile);
     int convertedBytesToWrite = htonl(bytesToWrite);
     rc = write(sd, &convertedBytesToWrite, sizeof(convertedBytesToWrite));
     printf("wrote %d bytes to send the file length\n", bytesToWrite);
-    printf("converted %d bytes to send the file length\n", convertedBytesToWrite);
-    printf("sent %d bytes of the file size\n", rc);    
+    //printf("converted %d bytes to send the file length\n", convertedBytesToWrite);
+    //printf("sent %d bytes of the file size\n", rc);    
     if(rc < 0){ 
         perror("error writing");
     }
 
+    //WRITE STATEMENT
     //Getting ready to send the file name in bytes
-    rc = write(sd, &filename, sizeof(filename));
-    printf("sent %d bytes to send the filename\n", rc);    
-    if(rc < 0){
-        perror("error writing");
+    rc = write(sd, &inputFileName, sizeof(inputFileName));
+    //printf("sent %d bytes to send the filename\n", rc);    
+
+
+    //WRITE STATEMENT
+    //Send contents of the file to the server
+    //readfile(inputFile, sd);
+    int totalBytesRead = 0;
+    char c ;
+    while (1)
+    {
+        c = fgetc (inputFile); // reading the file
+        if (c == EOF){
+            break;
+        }
+        rc = write(sd, &c, 1);
+        totalBytesRead += 1;
     }
-
-
+    printf("Closing the file test.c\n") ;
+    fclose (inputFile ) ;
+    printf("read %d bytes, and wrote bytes\n", totalBytesRead);
 
     return 0;
 }
@@ -92,81 +107,5 @@ int getFileLength(FILE* fp){
     return size;
 }
 
-int requestInfo()
-{
-    while(1){
-        char iFile[20];
-        char oFile[20];
-        int isDone = -1;
-        int firstIteration = 0; 
-        FILE *inputFile, *outputFile;
-
-        printf("%s","Please enter in an input file name.\n");
-        scanf(" %[^\n]s", iFile);
-
-        isDone = strcmp(iFile, "Done");
-        if (isDone == 0) {
-            printf("Done ~kya");
-            return 0;
-        }
-
-
-        printf("%s","Please enter in an output file name.\n");
-        scanf(" %[^\n]s",oFile);  
-        int rc;
-        char inputFileName[strlen(iFile)];
-        char outputFileName[strlen(oFile)];
-
-
-        memcpy(inputFileName, iFile, strlen(iFile));
-        memcpy(outputFileName, oFile, strlen(oFile));
-        printf("the input file name is %s, and the output file name is %s\n", inputFileName, outputFileName);
-
-        if((inputFile = fopen(iFile, "rb")) == NULL) {
-            printf("cannot open input file %s\n", inputFileName);
-            exit(1);
-        }
-        if((outputFile = fopen(outputFileName, "wb"))== NULL){
-            printf("cannot open output file %s\n", outputFileName);
-            exit(1);
-        }
-        rc = readfile(inputFile,outputFile);
-        rc = fclose(inputFile);
-        if(rc<0){
-            perror("close");
-        }
-        rc = fclose(outputFile);
-        if(rc<0){
-            perror("close");
-        }
-    }
-    
-    return 0;
-}
-
-#define BUFFSIZEREAD 1000
-
-int readfile(FILE *inputFile, FILE *outputFile)
-{
-    unsigned char buffer [BUFFSIZEREAD];
-    int numberOfBytes;
-    int rc;
-    int totalBytesRead = 0, totalBytesWritten = 0;
-
-    numberOfBytes = fread(buffer,1, BUFFSIZEREAD, inputFile);
-
-    while(numberOfBytes > 0){
-        totalBytesRead += numberOfBytes;
-        rc = fwrite(buffer,1,numberOfBytes, outputFile);
-        if(numberOfBytes != rc){
-            perror("writing to file");
-            exit(1);
-        }
-        totalBytesWritten += rc;
-        numberOfBytes = fread(buffer,1,BUFFSIZEREAD,inputFile);
-    }
-    printf("read %d bytes, and wrote %d bytes\n", totalBytesRead, totalBytesWritten);
-    return 0;
-}
 
 
