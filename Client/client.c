@@ -38,69 +38,83 @@ int main(int argc, char *argv[]){
         perror("error connecting stream socket");
         exit(1);
     }
-    memset(filename,0,100);
 
 
-    printf("What is the name of the file you'd like to send?\n");
-    scanf("%s", filename);
-    char inputFileName[strlen(filename)];
-    memcpy(inputFileName, filename, strlen(filename));
-    inputFileName[strlen(filename)] = '\0';
-    printf("filename to send it '%s'\n", inputFileName);
-    printf("filename size to send it '%lu'\n", strlen(inputFileName));
-    int sizeOfFileName = strlen(inputFileName);
-    int converted_sizeOfFileName = ntohs(sizeOfFileName);
-    //added
+    while(1){
+        memset(filename,0,100);
+        printf("What is the name of the file you'd like to send?\n");
+        scanf("%s", filename);
+        char inputFileName[strlen(filename)];
+        memcpy(inputFileName, filename, strlen(filename));
+        inputFileName[strlen(filename)] = '\0';
+        printf("filename to send it '%s'\n", inputFileName);
+        printf("filename size to send it '%lu'\n", strlen(inputFileName));
+        int sizeOfFileName = strlen(inputFileName);
+        int converted_sizeOfFileName = ntohs(sizeOfFileName);
+        //added
 
-    //WRITE STATEMENT
-    //Getting ready to send the size of the file name in bytes
-    rc = write(sd, &converted_sizeOfFileName, sizeof(converted_sizeOfFileName));
-    printf("wrote %d bytes to send the filename size\n", rc);
-    if (rc < 0) {
-        perror("error writing");
-    }
-    //WRITE STATEMENT
-    //Getting ready to send the size of the file in bytes
-    if((inputFile = fopen(filename, "rb")) == NULL) {
-        printf("cannot open input file %s\n", filename);
-    }
-
-    int bytesToWrite = getFileLength(inputFile);
-    int convertedBytesToWrite = htonl(bytesToWrite);
-    rc = write(sd, &convertedBytesToWrite, sizeof(convertedBytesToWrite));
-    printf("wrote %d bytes to send the file length\n", bytesToWrite);
-    //printf("converted %d bytes to send the file length\n", convertedBytesToWrite);
-    //printf("sent %d bytes of the file size\n", rc);    
-    if(rc < 0){ 
-        perror("error writing");
-    }
-
-    //WRITE STATEMENT
-    //Getting ready to send the file name in bytes
-    rc = write(sd, &inputFileName, sizeof(inputFileName));
-    if(rc < 0){ 
-        perror("error writing");
-    }
-    //printf("sent %d bytes to send the filename\n", rc);    
-
-
-    //WRITE STATEMENT
-    //Send contents of the file to the server
-    //readfile(inputFile, sd);
-    int totalBytesRead = 0;
-    char c ;
-    while (1)
-    {
-        c = fgetc (inputFile); // reading the file
-        if (c == EOF){
-            break;
+        //WRITE STATEMENT
+        //Getting ready to send the size of the file name in bytes
+        rc = write(sd, &converted_sizeOfFileName, sizeof(converted_sizeOfFileName));
+        printf("wrote %d bytes to send the filename size\n", rc);
+        if (rc < 0) {
+            perror("error writing");
         }
-        rc = write(sd, &c, 1);
-        totalBytesRead += 1;
+
+
+        int isDone = -1;
+        isDone = strcmp(inputFileName, "Done");
+        if (isDone == 0) {
+            int bytesToWrite = 0;
+            int convertedBytesToWrite = htonl(bytesToWrite);
+            rc = write(sd, &convertedBytesToWrite, sizeof(convertedBytesToWrite));
+            rc = write(sd, &inputFileName, sizeof(inputFileName));
+            printf("Done ~kya");
+            return 0;
+        };    
+        //WRITE STATEMENT
+        //Getting ready to send the size of the file in bytes
+        if((inputFile = fopen(filename, "rb")) == NULL) {
+            printf("cannot open input file %s\n", filename);
+        }
+
+        int bytesToWrite = getFileLength(inputFile);
+        int convertedBytesToWrite = htonl(bytesToWrite);
+        rc = write(sd, &convertedBytesToWrite, sizeof(convertedBytesToWrite));
+        printf("wrote %d bytes to send the file length\n", bytesToWrite);
+        //printf("converted %d bytes to send the file length\n", convertedBytesToWrite);
+        //printf("sent %d bytes of the file size\n", rc);    
+        if(rc < 0){ 
+            perror("error writing");
+        }
+
+        //WRITE STATEMENT
+        //Getting ready to send the file name in bytes
+        rc = write(sd, &inputFileName, sizeof(inputFileName));
+        if(rc < 0){ 
+            perror("error writing");
+        }
+        //printf("sent %d bytes to send the filename\n", rc)
+
+
+        //WRITE STATEMENT
+        //Send contents of the file to the server
+        //readfile(inputFile, sd);
+        int totalBytesRead = 0;
+        char c ;
+        while (1)
+        {
+            c = fgetc (inputFile); // reading the file
+            if (c == EOF){
+                break;
+            }
+            rc = write(sd, &c, 1);
+            totalBytesRead += 1;
+        }
+        printf("Closing the file test.c\n") ;
+        fclose (inputFile ) ;
+        printf("read %d bytes, and wrote bytes\n", totalBytesRead);
     }
-    printf("Closing the file test.c\n") ;
-    fclose (inputFile ) ;
-    printf("read %d bytes, and wrote bytes\n", totalBytesRead);
 
     return 0;
 }
