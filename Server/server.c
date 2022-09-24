@@ -7,15 +7,18 @@
 #include <unistd.h>
 
 int main(int argc, char *argv[]){
-    int sd;
-    int connected_sd;
-    int rc;
+    int sd; /*socket descriptor*/
+    int flag; 
+    int connected_sd; /*socket descriptor*/
+    int rc; /*Return code*/
     struct sockaddr_in server_address;
     struct sockaddr_in from_address;
     char buffer[100];
-    int flags = 0;
+    char output[100];
     socklen_t fromLength; 
     int portNumber; 
+    int bytesRead;
+    FILE *outputFile;
     
     if (argc < 2){
         printf("Usage is: server <portNumber>\n"); 
@@ -26,10 +29,6 @@ int main(int argc, char *argv[]){
     portNumber = atoi(argv[1]);
     sd = socket(AF_INET, SOCK_STREAM,0);
 
-    printf("Got here!");
-    printf("%d",sd);
-    printf("%d",portNumber);
-    
     
     fromLength = sizeof(struct sockaddr_in);
     server_address.sin_family = AF_INET;
@@ -46,19 +45,34 @@ int main(int argc, char *argv[]){
     connected_sd = accept(sd, (struct sockaddr*) &from_address, &fromLength);
     memset(buffer,0,100);
 
-    
+    //READ STATEMENT
     int sizeOfFileName;
     rc = read(connected_sd, &sizeOfFileName,sizeof(int));
-    printf("read %d bytes to get the filesize\n",rc);
-    printf("size of the file prior to converson is %d bytes \n",sizeOfFileName);
+    printf("read %d bytes to get the filename size\n",rc);
+    printf("size of the file name prior to converson is %d bytes \n",sizeOfFileName);
     sizeOfFileName = ntohs(sizeOfFileName);
-    printf("size of the file after converson is %d bytes \n",sizeOfFileName);
-    rc = read(connected_sd, &buffer, sizeOfFileName);
+    printf("size of the file name after converson is %d bytes \n",sizeOfFileName);
+
+    //READ STATEMENT
+    int fileSize;
+    rc = read(connected_sd, &fileSize, sizeof(int));
+    printf("read %d bytes to get the filesize\n",rc);
+    printf("size of the file name prior to converson is %d bytes \n",fileSize);
+    fileSize = ntohl(fileSize);
+    printf("Size of file: %d\n",fileSize);
+
+
+    //READ STATEMENT
+    rc = read(connected_sd, output, sizeOfFileName);
     if (rc <0 ){
         perror("read error");
         exit(1);
     }
-    printf("%s",&buffer);
+    //prints name of the file
+    printf("Name of file: %s\n",output);
+
+
+
 
     return 0;
 }

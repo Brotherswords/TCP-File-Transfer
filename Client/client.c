@@ -10,6 +10,8 @@ int readfile(FILE *inputFile, FILE *outputFile);
 
 int requestInfo();
 
+int getFileLength(FILE* fp);
+
 int main(int argc, char *argv[]){
     int sd;
     struct sockaddr_in server_address;
@@ -17,6 +19,7 @@ int main(int argc, char *argv[]){
     char buffer[100] = "hello world";
     int portNumber;
     char serverIP[29];
+    FILE *inputFile;
     int rc = 0;
 
     if (argc < 3) {
@@ -39,27 +42,47 @@ int main(int argc, char *argv[]){
         exit(1);
     }
 
-    printf("What is the name of the file you'd like to send");
+    printf("What is the name of the file you'd like to send?\n");
     scanf("%s", filename);
-    printf("filename to send it '%s'\n", filename);
-    int sizeOfFileName = strlen(filename);
+    char inputFileName[strlen(filename)];
+    memcpy(inputFileName, filename, strlen(filename));
+    printf("filename to send it '%s'\n", inputFileName);
+    int sizeOfFileName = strlen(inputFileName);
     int converted_sizeOfFileName = ntohs(sizeOfFileName);
 
+    //Getting ready to send the size of the file name in bytes
     rc = write(sd, &converted_sizeOfFileName, sizeof(converted_sizeOfFileName));
-    printf("wrote %d bytes to send the filesize\n", rc);
+    printf("wrote %d bytes to send the filename size\n", rc);
     if (rc < 0) {
         perror("error writing");
     }
 
+    //Getting ready to send the size of the file in bytes
+    if((inputFile = fopen(filename, "rb")) == NULL) {
+        printf("cannot open input file %s\n", filename);
+        exit(1);
+    }
+
+    int bytesToWrite = getFileLength(inputFile);
+    int convertedBytesToWrite = htonl(bytesToWrite);
+    rc = write(sd, &convertedBytesToWrite, sizeof(convertedBytesToWrite));
+    printf("wrote %d bytes to send the file length\n", bytesToWrite);
+    printf("converted %d bytes to send the file length\n", convertedBytesToWrite);
+    printf("sent %d bytes of the file size\n", rc);    
+    if(rc < 0){ 
+        perror("error writing");
+    }
+
+    //Getting ready to send the file name in bytes
     rc = write(sd, &filename, sizeof(filename));
-    printf("sent %d bytes\n to send the filename\n", rc);    
+    printf("sent %d bytes to send the filename\n", rc);    
     if(rc < 0){
         perror("error writing");
     }
 
 
+
     return 0;
-    //requestInfo();
 }
 
 int getFileLength(FILE* fp){
