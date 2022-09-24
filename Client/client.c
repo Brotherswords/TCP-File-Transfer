@@ -26,7 +26,7 @@ int main(int argc, char *argv[]){
 
     sd = socket(AF_INET, SOCK_STREAM, 0);
 
-    portNumber = strtol(argv[1], NULL,10);
+    portNumber = strtol(argv[2], NULL,10);
     strcpy(serverIP, argv[1]);
 
     server_address.sin_family = AF_INET;
@@ -38,13 +38,12 @@ int main(int argc, char *argv[]){
         perror("error connecting stream socket");
         exit(1);
     }
+
     printf("What is the name of the file you'd like to send");
     scanf("%s", filename);
     printf("filename to send it '%s'\n", filename);
     int sizeOfFileName = strlen(filename);
     int converted_sizeOfFileName = ntohs(sizeOfFileName);
-
-
 
     rc = write(sd, &converted_sizeOfFileName, sizeof(converted_sizeOfFileName));
     printf("wrote %d bytes to send the filesize\n", rc);
@@ -52,7 +51,7 @@ int main(int argc, char *argv[]){
         perror("error writing");
     }
 
-    rc = write(sd, buffer, converted_sizeOfFileName);
+    rc = write(sd, filename, converted_sizeOfFileName);
     printf("sent %d bytes\n to send the filename\n", rc);    
     if(rc < 0){
         perror("error writing");
