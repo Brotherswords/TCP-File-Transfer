@@ -6,9 +6,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#define BUFFSIZEREAD 1000
 
-int readfile(FILE *inputFile, int sd, int rc);
 
 int getFileLength(FILE* fp);
 
@@ -42,13 +40,17 @@ int main(int argc, char *argv[]){
     }
     memset(filename,0,100);
 
+
     printf("What is the name of the file you'd like to send?\n");
     scanf("%s", filename);
     char inputFileName[strlen(filename)];
     memcpy(inputFileName, filename, strlen(filename));
+    inputFileName[strlen(filename)] = '\0';
     printf("filename to send it '%s'\n", inputFileName);
+    printf("filename size to send it '%lu'\n", strlen(inputFileName));
     int sizeOfFileName = strlen(inputFileName);
     int converted_sizeOfFileName = ntohs(sizeOfFileName);
+    //added
 
     //WRITE STATEMENT
     //Getting ready to send the size of the file name in bytes
@@ -76,6 +78,9 @@ int main(int argc, char *argv[]){
     //WRITE STATEMENT
     //Getting ready to send the file name in bytes
     rc = write(sd, &inputFileName, sizeof(inputFileName));
+    if(rc < 0){ 
+        perror("error writing");
+    }
     //printf("sent %d bytes to send the filename\n", rc);    
 
 
