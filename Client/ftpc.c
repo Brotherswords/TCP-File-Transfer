@@ -41,17 +41,20 @@ int main(int argc, char *argv[]){
 
 
     while(1){
+        //Making sure that filename doesnt have extra characters
         memset(filename,0,100);
         printf("What is the name of the file you'd like to send?\n");
+        //Take user input on the file name and store it!
         scanf("%s", filename);
+        //Create an input file string of only that length and copy it over to prevent extra characters from being sent over the network.
         char inputFileName[strlen(filename)];
         memcpy(inputFileName, filename, strlen(filename));
         inputFileName[strlen(filename)] = '\0';
         printf("filename to send it '%s'\n", inputFileName);
         printf("filename size to send it '%lu'\n", strlen(inputFileName));
+        //Get and convert the size of the file to network order.
         int sizeOfFileName = strlen(inputFileName);
         int converted_sizeOfFileName = ntohs(sizeOfFileName);
-        //added
 
         //WRITE STATEMENT
         //Getting ready to send the size of the file name in bytes
@@ -61,29 +64,29 @@ int main(int argc, char *argv[]){
             perror("error writing");
         }
 
-
+        //Check if DONE is entered, and if so write the corresponding file size over to make sure the 
+        //reads on the server size understand that this is not a file to be transferred, and then terminate
+        //the connection. 
         int isDone = -1;
-        isDone = strcmp(inputFileName, "Done");
+        isDone = strcmp(inputFileName, "DONE");
         if (isDone == 0) {
             int bytesToWrite = 0;
             int convertedBytesToWrite = htonl(bytesToWrite);
             rc = write(sd, &convertedBytesToWrite, sizeof(convertedBytesToWrite));
             rc = write(sd, &inputFileName, sizeof(inputFileName));
-            printf("Done ~kya");
+            printf("Connection Closed :)");
             return 0;
         };    
-        //WRITE STATEMENT
-        //Getting ready to send the size of the file in bytes
+        //Getting ready to read from the file. 
         if((inputFile = fopen(filename, "rb")) == NULL) {
             printf("cannot open input file %s\n", filename);
         }
 
+        //Get and convert the size of the file to network length
         int bytesToWrite = getFileLength(inputFile);
         int convertedBytesToWrite = htonl(bytesToWrite);
         rc = write(sd, &convertedBytesToWrite, sizeof(convertedBytesToWrite));
         printf("wrote %d bytes to send the file length\n", bytesToWrite);
-        //printf("converted %d bytes to send the file length\n", convertedBytesToWrite);
-        //printf("sent %d bytes of the file size\n", rc);    
         if(rc < 0){ 
             perror("error writing");
         }
@@ -94,26 +97,30 @@ int main(int argc, char *argv[]){
         if(rc < 0){ 
             perror("error writing");
         }
-        //printf("sent %d bytes to send the filename\n", rc)
 
 
         //WRITE STATEMENT
-        //Send contents of the file to the server
-        //readfile(inputFile, sd);
+        //Send contents of the file to the server one byte a a time!
+        //Total numberOfBytes written
         int totalBytesRead = 0;
-        char c ;
+        char byte;
         while (1)
         {
-            c = fgetc (inputFile); // reading the file
-            if (c == EOF){
+            //get next byte from the InputFile
+            byte= fgetc (inputFile); // reading the file one char at a time, if it fails to get anything it'll return an EOF, which indicates end of file!
+            //Check if we've reached the end of the file, if yes that means we're done and time to break out of the loop.
+            if (byte == EOF){
                 break;
             }
-            rc = write(sd, &c, 1);
+            //Write the byte to the server
+            rc = write(sd, &byte, 1);
+            //increment number of bytes
             totalBytesRead += 1;
         }
+        //close the file that we've been reading from.
         printf("Closing the file test.c\n") ;
         fclose (inputFile ) ;
-        //READ STATEMENT ACK from Server
+        //READ STATEMENT ACK from Server making sure the server has recieved the proper number of bytes :)
         int totalBytesReceived = 0;
         rc = read(sd, &totalBytesReceived, sizeof(int));
         printf("ACK from server: Server Received %d bytes\n", totalBytesReceived);
